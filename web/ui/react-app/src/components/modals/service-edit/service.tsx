@@ -1,95 +1,91 @@
-import { FormGroup, Stack } from "react-bootstrap";
-import { ServiceEditOtherData, ServiceEditType } from "types/service-edit";
+import { ServiceEditOtherData, ServiceEditType } from 'types/service-edit';
 
-import EditServiceCommands from "components/modals/service-edit/commands";
-import EditServiceDashboard from "components/modals/service-edit/dashboard";
-import EditServiceDeployedVersion from "components/modals/service-edit/deployed-version";
-import EditServiceLatestVersion from "components/modals/service-edit/latest-version";
-import EditServiceNotifies from "components/modals/service-edit/notifies";
-import EditServiceOptions from "components/modals/service-edit/options";
-import EditServiceWebHooks from "components/modals/service-edit/webhooks";
-import { FC } from "react";
-import { FormItem } from "components/generic/form";
-import { WebHookType } from "types/config";
-import { useWebSocket } from "contexts/websocket";
+import EditServiceCommands from 'components/modals/service-edit/commands';
+import EditServiceDashboard from 'components/modals/service-edit/dashboard';
+import EditServiceDeployedVersion from 'components/modals/service-edit/deployed-version';
+import EditServiceLatestVersion from 'components/modals/service-edit/latest-version';
+import EditServiceNotifies from 'components/modals/service-edit/notifies';
+import EditServiceOptions from 'components/modals/service-edit/options';
+import EditServiceRoot from 'components/modals/service-edit/root';
+import EditServiceWebHooks from 'components/modals/service-edit/webhooks';
+import { FC } from 'react';
+import { Stack } from 'react-bootstrap';
+import { WebHookType } from 'types/config';
 
 interface Props {
-  name: string;
-  defaultData: ServiceEditType;
-  otherOptionsData: ServiceEditOtherData;
+	id: string;
+	name?: string;
+	defaultData: ServiceEditType;
+	otherOptionsData?: ServiceEditOtherData;
+	loading: boolean;
 }
 
 /**
- * Returns the form fields for creating/editing a service
+ * The form fields for creating/editing a service.
  *
- * @param name - The name of the service
- * @returns The form fields for creating/editing a service
+ * @param id - The ID of the Service.
+ * @param name - The name of the service.
+ * @param defaultData - The default data for the service.
+ * @param otherOptionsData - The other options data, containing globals/defaults/hardDefaults.
+ * @param loading - Whether the modal is loading.
+ * @returns The form fields for creating/editing a service.
  */
-const EditService: FC<Props> = ({ name, defaultData, otherOptionsData }) => {
-  const { monitorData } = useWebSocket();
-
-  return (
-    <Stack gap={3}>
-      <FormGroup className="mb-2">
-        <FormItem
-          name="name"
-          required
-          registerParams={{
-            validate: (value: string) => {
-              const validation =
-                value === ""
-                  ? false
-                  : // Name hasn't changed or name isn't in use.
-                    name === value || !monitorData.order.includes(value);
-              return (
-                validation || (value === "" ? "Required" : "Must be unique")
-              );
-            },
-          }}
-          col_sm={12}
-          label="Name"
-        />
-        <FormItem name="comment" col_sm={12} label="Comment" position="right" />
-      </FormGroup>
-      <EditServiceOptions
-        defaults={otherOptionsData?.defaults?.service?.options}
-        hard_defaults={otherOptionsData?.hard_defaults?.service?.options}
-      />
-      <EditServiceLatestVersion
-        serviceName={name}
-        original={defaultData?.latest_version}
-        original_options={defaultData?.options}
-        defaults={otherOptionsData?.defaults?.service?.latest_version}
-        hard_defaults={otherOptionsData?.hard_defaults?.service?.latest_version}
-      />
-      <EditServiceDeployedVersion
-        serviceName={name}
-        original={defaultData?.deployed_version}
-        original_options={defaultData?.options}
-        defaults={otherOptionsData?.defaults?.service?.deployed_version}
-        hard_defaults={
-          otherOptionsData?.hard_defaults?.service?.deployed_version
-        }
-      />
-      <EditServiceCommands name="command" />
-      <EditServiceWebHooks
-        mains={otherOptionsData?.webhook}
-        defaults={otherOptionsData?.defaults?.webhook as WebHookType}
-        hard_defaults={otherOptionsData?.hard_defaults?.webhook as WebHookType}
-      />
-      <EditServiceNotifies
-        serviceName={name}
-        originals={defaultData?.notify}
-        mains={otherOptionsData?.notify}
-        defaults={otherOptionsData?.defaults?.notify}
-        hard_defaults={otherOptionsData?.hard_defaults?.notify}
-      />
-      <EditServiceDashboard
-        defaults={otherOptionsData?.defaults?.service?.dashboard}
-        hard_defaults={otherOptionsData?.hard_defaults?.service?.dashboard}
-      />
-    </Stack>
-  );
+const EditService: FC<Props> = ({
+	id,
+	name,
+	defaultData,
+	otherOptionsData,
+	loading,
+}) => {
+	return (
+		<Stack gap={3}>
+			<EditServiceRoot
+				id={id}
+				name={name}
+				original_name={defaultData?.name}
+				loading={loading}
+			/>
+			<EditServiceOptions
+				defaults={otherOptionsData?.defaults?.service?.options}
+				hard_defaults={otherOptionsData?.hard_defaults?.service?.options}
+			/>
+			<EditServiceLatestVersion
+				serviceID={id}
+				original={defaultData?.latest_version}
+				original_options={defaultData?.options}
+				defaults={otherOptionsData?.defaults?.service?.latest_version}
+				hard_defaults={otherOptionsData?.hard_defaults?.service?.latest_version}
+			/>
+			<EditServiceDeployedVersion
+				serviceID={id}
+				original={defaultData?.deployed_version}
+				original_options={defaultData?.options}
+				defaults={otherOptionsData?.defaults?.service?.deployed_version}
+				hard_defaults={
+					otherOptionsData?.hard_defaults?.service?.deployed_version
+				}
+			/>
+			<EditServiceCommands name="command" loading={loading} />
+			<EditServiceWebHooks
+				mains={otherOptionsData?.webhook}
+				defaults={otherOptionsData?.defaults?.webhook as WebHookType}
+				hard_defaults={otherOptionsData?.hard_defaults?.webhook as WebHookType}
+				loading={loading}
+			/>
+			<EditServiceNotifies
+				serviceID={id}
+				originals={defaultData?.notify}
+				mains={otherOptionsData?.notify}
+				defaults={otherOptionsData?.defaults?.notify}
+				hard_defaults={otherOptionsData?.hard_defaults?.notify}
+				loading={loading}
+			/>
+			<EditServiceDashboard
+				defaults={otherOptionsData?.defaults?.service?.dashboard}
+				hard_defaults={otherOptionsData?.hard_defaults?.service?.dashboard}
+			/>
+		</Stack>
+	);
 };
 
 export default EditService;

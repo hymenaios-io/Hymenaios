@@ -1,4 +1,4 @@
-// Copyright [2024] [Argus]
+// Copyright [2025] [Argus]
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import (
 // ServiceSummary is the Summary of a Service.
 type ServiceSummary struct {
 	ID                       string  `json:"id,omitempty" yaml:"id,omitempty"`
+	Name                     *string `json:"name,omitempty" yaml:"name,omitempty"`                                 // Name for this Service.
 	Active                   *bool   `json:"active,omitempty" yaml:"active,omitempty"`                             // Active Service?
 	Comment                  string  `json:"comment,omitempty" yaml:"comment,omitempty"`                           // Comment on the Service.
 	Type                     string  `json:"type,omitempty" yaml:"type,omitempty"`                                 // "github"/"URL".
@@ -47,18 +48,40 @@ func (s *ServiceSummary) String() string {
 	return util.ToJSONString(s)
 }
 
-// RemoveUnchanged will nil/clear the fields that haven't changed compared to `other`.
-func (s *ServiceSummary) RemoveUnchanged(other *ServiceSummary) {
-	if other == nil {
+// handleUnchangedOrEmpty returns:
+//   - "" if the values match,
+//   - "~" if `new` is an empty string and `current` is non-empty,
+//   - `new` if `new` is not empty, and not the same as `current`.
+func handleUnchangedOrEmpty(new, current string) string {
+	if current == new {
+		return ""
+	}
+	if new == "" && current != "" {
+		return "~"
+	}
+	return new
+}
+
+// RemoveUnchanged will nil/clear the fields that haven't changed compared to `oldData`.
+func (s *ServiceSummary) RemoveUnchanged(oldData *ServiceSummary) {
+	if oldData == nil {
 		return
 	}
 
 	// ID
-	if other.ID == s.ID {
+	if oldData.ID == s.ID {
 		s.ID = ""
 	}
+	// Name - Removed.
+	if oldData.Name != nil && s.Name == nil {
+		emptyName := ""
+		s.Name = &emptyName
+		// Unchanged.
+	} else if oldData.Name != nil && s.Name != nil && *oldData.Name == *s.Name {
+		s.Name = nil
+	}
 	// Active
-	if util.DereferenceOrNilValue(other.Active, true) ==
+	if util.DereferenceOrNilValue(oldData.Active, true) ==
 		util.DereferenceOrNilValue(s.Active, true) {
 		s.Active = nil
 	} else {
@@ -66,23 +89,17 @@ func (s *ServiceSummary) RemoveUnchanged(other *ServiceSummary) {
 		s.Active = &active
 	}
 	// Type
-	if other.Type == s.Type {
+	if oldData.Type == s.Type {
 		s.Type = ""
 	}
 	// URL
-	if other.WebURL == s.WebURL {
-		s.WebURL = ""
-	}
+	s.WebURL = handleUnchangedOrEmpty(s.WebURL, oldData.WebURL)
 	// Icon
-	if other.Icon == s.Icon {
-		s.Icon = ""
-	}
+	s.Icon = handleUnchangedOrEmpty(s.Icon, oldData.Icon)
 	// IconLinkTo
-	if other.IconLinkTo == s.IconLinkTo {
-		s.IconLinkTo = ""
-	}
+	s.IconLinkTo = handleUnchangedOrEmpty(s.IconLinkTo, oldData.IconLinkTo)
 	// Has DeployedVersionLookup?
-	if util.DereferenceOrNilValue(other.HasDeployedVersionLookup, false) ==
+	if util.DereferenceOrNilValue(oldData.HasDeployedVersionLookup, false) ==
 		util.DereferenceOrNilValue(s.HasDeployedVersionLookup, false) {
 		s.HasDeployedVersionLookup = nil
 	}
@@ -90,18 +107,18 @@ func (s *ServiceSummary) RemoveUnchanged(other *ServiceSummary) {
 	// Status
 	statusSameCount := 0
 	// Status.ApprovedVersion
-	if other.Status.ApprovedVersion == s.Status.ApprovedVersion {
+	if oldData.Status.ApprovedVersion == s.Status.ApprovedVersion {
 		s.Status.ApprovedVersion = ""
 		statusSameCount++
 	}
 	// Status.DeployedVersion
-	if other.Status.DeployedVersion == s.Status.DeployedVersion {
+	if oldData.Status.DeployedVersion == s.Status.DeployedVersion {
 		s.Status.DeployedVersion = ""
 		s.Status.DeployedVersionTimestamp = ""
 		statusSameCount++
 	}
 	// Status.LatestVersion
-	if other.Status.LatestVersion == s.Status.LatestVersion {
+	if oldData.Status.LatestVersion == s.Status.LatestVersion {
 		s.Status.LatestVersion = ""
 		s.Status.LatestVersionTimestamp = ""
 		statusSameCount++
@@ -348,6 +365,7 @@ type ServiceSlice map[string]*Service
 
 // Service defines a software source to track and where/what to notify.
 type Service struct {
+	Name                  string                 `json:"name,omitempty" yaml:"name,omitempty"`                         // Name for this Service.
 	Comment               string                 `json:"comment,omitempty" yaml:"comment,omitempty"`                   // Comment on the Service.
 	Options               *ServiceOptions        `json:"options,omitempty" yaml:"options,omitempty"`                   // Options to give the Service.
 	LatestVersion         *LatestVersion         `json:"latest_version,omitempty" yaml:"latest_version,omitempty"`     // Latest version lookup for the Service.
@@ -648,6 +666,7 @@ type CommandEdit struct {
 
 // ServiceEdit is a Service in API format.
 type ServiceEdit struct {
+	Name                  string                 `json:"name,omitempty" yaml:"name,omitempty"`                         // Name of the Service.
 	Comment               string                 `json:"comment,omitempty" yaml:"comment,omitempty"`                   // Comment on the Service.
 	Options               *ServiceOptions        `json:"options,omitempty" yaml:"options,omitempty"`                   // Options to give the Service.
 	LatestVersion         *LatestVersion         `json:"latest_version,omitempty" yaml:"latest_version,omitempty"`     // Latest version lookup for the Service.

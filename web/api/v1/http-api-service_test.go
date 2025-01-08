@@ -1,4 +1,4 @@
-// Copyright [2024] [Argus]
+// Copyright [2025] [Argus]
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -95,7 +95,7 @@ func TestHTTP_httpServiceOrder(t *testing.T) {
 }
 
 func TestHTTP_httpServiceSummary(t *testing.T) {
-	testSVC := testService("TestHTTP_httpServiceSummary")
+	testSVC := testService("TestHTTP_httpServiceSummary", true)
 	// GIVEN an API and a request for detail of a service
 	file := "TestHTTP_httpServiceSummary.yml"
 	api := testAPI(file)
@@ -109,17 +109,17 @@ func TestHTTP_httpServiceSummary(t *testing.T) {
 	})
 
 	tests := map[string]struct {
-		serviceName    string
+		serviceID      string
 		wantBody       string
 		wantStatusCode int
 	}{
 		"known service": {
-			serviceName:    (testSVC.ID),
+			serviceID:      testSVC.ID,
 			wantBody:       testSVC.Summary().String(),
 			wantStatusCode: http.StatusOK,
 		},
 		"unknown service": {
-			serviceName:    ("bish-bash-bosh"),
+			serviceID:      "bish-bash-bosh",
 			wantBody:       `\{"message":"service .+ not found"`,
 			wantStatusCode: http.StatusNotFound,
 		},
@@ -130,12 +130,12 @@ func TestHTTP_httpServiceSummary(t *testing.T) {
 			t.Parallel()
 
 			target := "/api/v1/service/summary/"
-			target += url.QueryEscape(tc.serviceName)
+			target += url.QueryEscape(tc.serviceID)
 
 			// WHEN that HTTP request is sent
 			req := httptest.NewRequest(http.MethodGet, target, nil)
 			vars := map[string]string{
-				"service_name": tc.serviceName}
+				"service_id": tc.serviceID}
 			req = mux.SetURLVars(req, vars)
 			w := httptest.NewRecorder()
 			api.httpServiceSummary(w, req)
